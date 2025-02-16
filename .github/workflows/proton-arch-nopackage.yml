@@ -12,6 +12,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+       # Setup ccache
+      - run: pacman -Syu --noconfirm ccache
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+      # Compile Proton 
       - name: Compile
         run: |
           echo -e "[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
