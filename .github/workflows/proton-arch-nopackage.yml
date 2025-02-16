@@ -2,7 +2,7 @@ name: Proton nopackage Arch Linux CI
 
 on:
   schedule:
-    - cron:  '25 9,21 * * *'
+    - cron:  '25 9 1,15 * *'
   workflow_dispatch:
 
 jobs:
@@ -16,6 +16,7 @@ jobs:
         run: |
           echo -e "[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
           pacman -Syu --noconfirm base-devel sudo lib32-jack2
+          curl -o /usr/include/linux/ntsync.h https://raw.githubusercontent.com/torvalds/linux/v6.14-rc2/include/uapi/linux/ntsync.h
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown user -R ..
           chown user -R /tmp
@@ -24,9 +25,6 @@ jobs:
           sed -i 's/uninstaller="false"/uninstaller="true"/' proton-tkg.cfg
           sed -i 's/autoinstall="false"/autoinstall="true"/' proton-tkg.cfg
           sed -i 's/LOCAL_PRESET=""/LOCAL_PRESET="none"/' proton-tkg.cfg
-          sed -i 's/build_gstreamer="false"/build_gstreamer="true"/' proton-tkg.cfg
-          sed -i 's/lib32_gstreamer="false"/lib32_gstreamer="true"/' proton-tkg.cfg
-          sed -i 's/wayland_driver="false"/wayland_driver="true"/' proton-tkg.cfg
           touch tarplz
           yes|./proton-tkg.sh
       - name: Archive the artifacts
