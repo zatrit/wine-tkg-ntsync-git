@@ -9,6 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: archlinux:latest
+    # Non-master branches should be ran manually
+    if: ${{ github.event_name != 'schedule' || github.ref_name == 'master' }}
 
     steps:
       - uses: actions/checkout@v4
