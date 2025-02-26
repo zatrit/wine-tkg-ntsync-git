@@ -2,29 +2,44 @@ name: Wine Arch Linux CI
 
 on:
   schedule:
-    - cron:  '45 8,20 * * *'
+    - cron:  '45 8 1,15 * *'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container: archlinux:latest
+    # Non-master branches should be ran manually
+    if: ${{ github.event_name != 'schedule' || github.ref_name == 'master' }}
+
+    strategy:
+      matrix:
+        march: ["x86-64-v2", "x86-64-v3"]
+
+    env:
+      XDG_CACHE_HOME: /tmp/.cache
 
     steps:
       - uses: actions/checkout@v4
+       # Setup ccache
+      - run: pacman -Syu --noconfirm ccache
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ matrix.march }}
+      # Compile Wine
       - name: Compile
-        env:
-          XDG_CACHE_HOME: /tmp/.cache
         run: |
           echo -e "[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
           pacman -Syu --noconfirm base-devel sudo
+          curl -o /usr/include/linux/ntsync.h https://raw.githubusercontent.com/torvalds/linux/v6.14-rc2/include/uapi/linux/ntsync.h
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown user -R . && cd wine-tkg-git
-          sed -i 's/wayland_driver="false"/wayland_driver="true"/' customization.cfg
+          sed -i -E 's/^(_(GCC|CROSS)_FLAGS=")([^"]*)(")/\1\3 -march=${{ matrix.march }}\4/' wine-tkg-profiles/advanced-customization.cfg
           su user -c "yes|PKGDEST=/tmp/wine-tkg makepkg --noconfirm -s"
 
       - name: Archive the artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wine-tkg-build
+          name: wine-tkg-build-${{ matrix.march }}
           path: /tmp/wine-tkg
