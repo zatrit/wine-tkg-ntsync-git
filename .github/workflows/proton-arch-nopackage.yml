@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        march: ["x86-64-v2", "x86-64-v3"]
+        march: ["x86-64-v3"]
 
     steps:
       - uses: actions/checkout@v4
