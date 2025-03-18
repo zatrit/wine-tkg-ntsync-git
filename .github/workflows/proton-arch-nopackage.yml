@@ -24,6 +24,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ github.job }}-${{ matrix.march }}
+          max-size: 300M
       # Compile Proton 
       - name: Compile
         run: |
