@@ -17,8 +17,8 @@ jobs:
       # Make ccache more efficient (maybe)
       max-parallel: 1
       matrix:
-        march: ["x86-64-v3"]
-        no_lib32: ["wow64", "false"]
+        march: ['x86-64-v3']
+        no_lib32: ['true', 'false']
 
     steps:
       - uses: actions/checkout@v4
@@ -53,5 +53,5 @@ jobs:
       - name: Archive the artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: proton-tkg-build-${{ matrix.march }}-${{ matrix.no_lib32 == 'wow64' && 'wow64' || 'multiarch' }}
+          name: proton-tkg-build-${{ matrix.march }}-${{ matrix.no_lib32 == 'true' && 'wow64' || 'multiarch' }}
           path: proton-tkg/built/*.tar
