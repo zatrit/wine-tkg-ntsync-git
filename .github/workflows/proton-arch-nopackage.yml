@@ -18,9 +18,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Setup pacman cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-cache
+          restore-keys: |
+            pacman-
        # Setup ccache
-      - run: pacman -Syu --noconfirm ccache
-      - name: ccache
+      - run: pacman -Syu --noconfirm ccache pacman-contrib
+      - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ github.job }}-${{ matrix.march }}
@@ -48,3 +55,5 @@ jobs:
         with:
           name: proton-tkg-build-${{ matrix.march }}
           path: proton-tkg/built/*.tar
+      - name: Clean old pacman packages
+        run: paccache -rk1
