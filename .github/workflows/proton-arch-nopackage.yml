@@ -14,17 +14,24 @@ jobs:
 
     strategy:
       fail-fast: false
-      # Make ccache more efficient (maybe)
+      # Make caching more efficient (maybe)
       max-parallel: 1
       matrix:
-        march: ['x86-64-v3']
+        march: [x86-64-v3]
         no_lib32: ['true', 'false']
 
     steps:
       - uses: actions/checkout@v4
+      - name: Setup pacman cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-cache
+          restore-keys: |
+            pacman-
        # Setup ccache
-      - run: pacman -Syu --noconfirm ccache
-      - name: ccache
+      - run: pacman -Syu --noconfirm ccache pacman-contrib
+      - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ github.job }}-${{ matrix.march }}
@@ -55,3 +62,5 @@ jobs:
         with:
           name: proton-tkg-build-${{ matrix.march }}-${{ matrix.no_lib32 == 'true' && 'wow64' || 'multiarch' }}
           path: proton-tkg/built/*.tar
+      - name: Clean old pacman packages
+        run: paccache -rk1

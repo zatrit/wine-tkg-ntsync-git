@@ -14,13 +14,20 @@ jobs:
 
     strategy:
       matrix:
-        march: ["x86-64-v3"]
+        march: [x86-64-v3]
 
     env:
       XDG_CACHE_HOME: /tmp/.cache
 
     steps:
       - uses: actions/checkout@v4
+      - name: Setup pacman cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-cache
+          restore-keys: |
+            pacman-
        # Setup ccache
       - run: pacman -Syu --noconfirm ccache
       - name: ccache
@@ -44,3 +51,5 @@ jobs:
         with:
           name: wine-tkg-build-${{ matrix.march }}
           path: /tmp/wine-tkg
+      - name: Clean old pacman packages
+        run: paccache -rk1
