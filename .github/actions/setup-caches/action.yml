@@ -1,0 +1,36 @@
+name: Setup caches
+description: Setup pacman and ccache caching. Currently works only on Arch Linux
+inputs:
+  ccache-home:
+    description: Directory which will be used for ccache
+    required: true
+  ccache-key:
+    description: ccache entry key
+    required: true
+runs:
+  using: composite
+  steps:
+    # https://github.com/actions/cache
+    - name: Get Date
+      id: get-date
+      run: echo "date=$(/bin/date -u "+%Y%m%d-%s")" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: pacman cache
+      uses: actions/cache@v4
+      with:
+        path: /var/cache/pacman/pkg
+        key: pacman-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          pacman-
+    - name: ccache
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.ccache-home }}
+        key: ccache-${{ inputs.ccache-key }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ccache-${{ inputs.ccache-key }}-
+    - shell: bash
+      run: |
+        pacman -Syu --noconfirm ccache pacman-contrib
+        mkdir -p ${{ inputs.ccache-home }}
+        ccache --zero-stats

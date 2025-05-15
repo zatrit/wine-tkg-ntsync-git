@@ -11,43 +11,35 @@ jobs:
     container: archlinux:latest
     # Non-master branches should be ran manually
     if: ${{ github.event_name != 'schedule' || github.ref_name == 'master' }}
-
     strategy:
       matrix:
         march: [x86-64-v3]
-
     env:
       XDG_CACHE_HOME: /tmp/.cache
 
     steps:
       - uses: actions/checkout@v4
-      - name: Setup pacman cache
-        uses: actions/cache@v4
+      - name: Setup caches
+        uses: ./.github/actions/setup-caches
         with:
-          path: /var/cache/pacman/pkg
-          key: pacman-cache
-          restore-keys: |
-            pacman-
-       # Setup ccache
-      - run: pacman -Syu --noconfirm ccache
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ${{ github.job }}-${{ matrix.march }}
-          max-size: 300M
-      # Compile Wine
+          ccache-home: ${{ env.XDG_CACHE_HOME }}
+          ccache-key: ${{ matrix.march }}
       - name: Compile
         run: |
           pacman -Syu --noconfirm base-devel sudo
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown user -R . && cd wine-tkg-git
+          chown user -R ${{ env.XDG_CACHE_HOME }}
           sed -i -E 's/^(_(GCC|CROSS)_FLAGS=")([^"]*)(")/\1\3 -march=${{ matrix.march }}\4/' wine-tkg-profiles/advanced-customization.cfg
-          su user -c "yes|PKGDEST=/tmp/wine-tkg makepkg --noconfirm -s"
+          su -w XDG_CACHE_HOME user -c "yes|PKGDEST=/tmp/wine-tkg makepkg --noconfirm -s"
 
       - name: Archive the artifacts
         uses: actions/upload-artifact@v4
         with:
           name: wine-tkg-build-${{ matrix.march }}
           path: /tmp/wine-tkg
-      - name: Clean old pacman packages
-        run: paccache -rk1
+      - name: Cleanup caches
+        if: always()
+        uses: ./.github/actions/cleanup-caches
+        with:
+          ccache-home: ${{ env.XDG_CACHE_HOME }}
