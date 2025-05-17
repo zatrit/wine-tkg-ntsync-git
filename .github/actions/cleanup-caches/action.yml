@@ -1,0 +1,18 @@
+name: 'Cleanup caches'
+description: 'Cleanup pacman and ccache caches. Currently works only on Arch Linux'
+inputs:
+  ccache-home:
+    description: 'Directory which will be used for ccache'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Cleanup caches
+      env:
+        XDG_CACHE_HOME: ${{ inputs.ccache-home }}
+      shell: bash
+      run: |
+        paccache -rk1
+        ccache -M 300MiB
+        ccache --cleanup
+        ccache -s >> $GITHUB_STEP_SUMMARY

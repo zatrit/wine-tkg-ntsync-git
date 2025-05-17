@@ -1,0 +1,26 @@
+description: 'Setup pacman and ccache caching. Currently works only on Arch Linux'
+inputs:
+  ccache-home:
+    description: 'Directory which will be used for ccache'
+    required: true
+  ccache-key:
+    description: 'ccache entry key'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: pacman cache
+      uses: actions/cache@v4
+      with:
+        path: /var/cache/pacman/pkg
+        key: pacman-cache
+    - name: ccache
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.ccache-home }}
+        key: ccache-${{ inputs.ccache-key }}
+    - shell: bash
+      run: |
+        pacman -Syu --noconfirm ccache pacman-contrib
+        mkdir -p ${{ inputs.ccache-home }}
+        ccache --zero-stats

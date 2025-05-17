@@ -11,28 +11,19 @@ jobs:
     container: archlinux:latest
     # Non-master branches should be ran manually
     if: ${{ github.event_name != 'schedule' || github.ref_name == 'master' }}
-
     strategy:
       matrix:
         march: [x86-64-v3]
+    env:
+      XDG_CACHE_HOME: /tmp/.cache
 
     steps:
       - uses: actions/checkout@v4
-      - name: Setup pacman cache
-        uses: actions/cache@v4
+      - name: Setup caches
+        uses: ./.github/actions/setup-caches
         with:
-          path: /var/cache/pacman/pkg
-          key: pacman-cache
-          restore-keys: |
-            pacman-
-       # Setup ccache
-      - run: pacman -Syu --noconfirm ccache pacman-contrib
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ${{ github.job }}-${{ matrix.march }}
-          max-size: 300M
-      # Compile Proton 
+          ccache-home: ${{ env.XDG_CACHE_HOME }}
+          ccache-key: ${{ matrix.march }}
       - name: Compile
         run: |
           echo -e "[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
@@ -56,5 +47,8 @@ jobs:
         with:
           name: proton-tkg-build-${{ matrix.march }}
           path: proton-tkg/built/*.tar
-      - name: Clean old pacman packages
-        run: paccache -rk1
+      - name: Cleanup caches
+        if: always()
+        uses: ./.github/actions/cleanup-caches
+        with:
+          ccache-home: ${{ env.XDG_CACHE_HOME }}

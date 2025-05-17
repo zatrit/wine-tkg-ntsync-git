@@ -11,32 +11,19 @@ jobs:
     container: archlinux:latest
     # Non-master branches should be ran manually
     if: ${{ github.event_name != 'schedule' || github.ref_name == 'master' }}
-
     strategy:
       matrix:
         march: [x86-64-v3]
-
     env:
       XDG_CACHE_HOME: /tmp/.cache
 
     steps:
       - uses: actions/checkout@v4
-       # Setup cache
-      - name: pacman cache
-        uses: actions/cache@v4
+      - name: Setup caches
+        uses: ./.github/actions/setup-caches
         with:
-          path: /var/cache/pacman/pkg
-          key: pacman-cache
-      - name: ccache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.XDG_CACHE_HOME }}
-          key: ccache-${{ matrix.march }}
-      - run: |
-          pacman -Syu --noconfirm ccache pacman-contrib
-          mkdir -p ${{ env.XDG_CACHE_HOME }}
-          ccache --zero-stats
-      # Compile Wine
+          ccache-home: ${{ env.XDG_CACHE_HOME }}
+          ccache-key: ${{ matrix.march }}
       - name: Compile
         run: |
           pacman -Syu --noconfirm base-devel sudo
@@ -51,12 +38,8 @@ jobs:
         with:
           name: wine-tkg-build-${{ matrix.march }}
           path: /tmp/wine-tkg
-      # Cache cleanup
-      - name: Cleanup pacman cache
-        run: paccache -rk1
-      - name: Cleanup ccache
+      - name: Cleanup caches
         if: always()
-        run: |
-          ccache -s >> $GITHUB_STEP_SUMMARY
-          ccache -M 300MiB
-          ccache --cleanup
+        uses: ./.github/actions/cleanup-caches
+        with:
+          ccache-home: ${{ env.XDG_CACHE_HOME }}
