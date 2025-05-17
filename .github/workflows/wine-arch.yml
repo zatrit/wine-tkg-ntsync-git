@@ -22,12 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
        # Setup cache
-      - name: Setup pacman cache
+      - name: pacman cache
         uses: actions/cache@v4
         with:
           path: /var/cache/pacman/pkg
           key: pacman-cache
-      - name: Setup ccache
+      - name: ccache
         uses: actions/cache@v4
         with:
           path: ${{ env.XDG_CACHE_HOME }}
@@ -51,8 +51,12 @@ jobs:
         with:
           name: wine-tkg-build-${{ matrix.march }}
           path: /tmp/wine-tkg
-      - name: Clean old pacman packages
+      # Cache cleanup
+      - name: Cleanup pacman cache
         run: paccache -rk1
-      - name: ccache summary
+      - name: Cleanup ccache
         if: always()
-        run: ccache -s >> $GITHUB_STEP_SUMMARY
+        run: |
+          ccache -s >> $GITHUB_STEP_SUMMARY
+          ccache -M 300MiB
+          ccache --cleanup
