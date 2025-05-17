@@ -21,28 +21,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+       # Setup cache
       - name: Setup pacman cache
         uses: actions/cache@v4
         with:
           path: /var/cache/pacman/pkg
           key: pacman-cache
-          restore-keys: |
-            pacman-
-       # Setup ccache
-      - run: pacman -Syu --noconfirm ccache pacman-contrib
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+      - name: Setup ccache
+        uses: actions/cache@v4
         with:
-          key: ${{ github.job }}-${{ matrix.march }}
-          max-size: 300M
+          path: ${{ env.XDG_CACHE_HOME }}
+          key: ccache-${{ matrix.march }}
+      - run: |
+          pacman -Syu --noconfirm ccache pacman-contrib
+          mkdir -p ${{ env.XDG_CACHE_HOME }}
+          ccache --zero-stats
       # Compile Wine
       - name: Compile
         run: |
           pacman -Syu --noconfirm base-devel sudo
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown user -R . && cd wine-tkg-git
+          chown user -R ${{ env.XDG_CACHE_HOME }}
           sed -i -E 's/^(_(GCC|CROSS)_FLAGS=")([^"]*)(")/\1\3 -march=${{ matrix.march }}\4/' wine-tkg-profiles/advanced-customization.cfg
-          su user -c "yes|PKGDEST=/tmp/wine-tkg makepkg --noconfirm -s"
+          su -w XDG_CACHE_HOME user -c "yes|PKGDEST=/tmp/wine-tkg makepkg --noconfirm -s"
 
       - name: Archive the artifacts
         uses: actions/upload-artifact@v4
@@ -51,3 +53,6 @@ jobs:
           path: /tmp/wine-tkg
       - name: Clean old pacman packages
         run: paccache -rk1
+      - name: ccache summary
+        if: always()
+        run: ccache -s >> $GITHUB_STEP_SUMMARY
