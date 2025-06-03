@@ -13,6 +13,6 @@ runs:
       shell: bash
       run: |
         paccache -rk1
-        ccache -M 500MiB
+        ccache -M 1GiB
         ccache --cleanup
         ccache -s >> $GITHUB_STEP_SUMMARY
